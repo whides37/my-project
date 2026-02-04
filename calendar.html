@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>予定付きカレンダー</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header class="header">
+        <h1>シンプルなウェブサイト</h1>
+    </header>
+
+    <nav class="nav">
+        <a href="index.html">ホーム</a>
+        <a href="profile.html">プロフィール</a>
+        <a href="contact.html">お問い合わせ</a>
+        <a href="calendar.html">予定記入カレンダー</a>
+    </nav>
+
+    <div class="container">
+        <section class="main-content">
+
+            <div class="calendar">
+                <div class="calendar-header">
+                    <button id="prev">前月 ＜</button>
+                    <h2 id="title"></h2>
+                    <button id="next">＞ 次月</button>
+                    <button id="todayBtn">今日</button>
+                </div>
+                <div class="grid" id="grid"></div>
+            </div>
+
+            <script>
+                const grid = document.getElementById("grid");
+                const title = document.getElementById("title");
+                let current = new Date();
+
+                function loadEvents() {
+                    return JSON.parse(localStorage.getItem("events") || "{}");
+                }
+
+                function saveEvent(dateKey, text) {
+                    const events = loadEvents();
+                    events[dateKey] = text;
+                    localStorage.setItem("events", JSON.stringify(events));
+                }
+
+                function render() {
+                    grid.innerHTML = "";
+                    const year = current.getFullYear();
+                    const month = current.getMonth();
+                    title.textContent = `${year}年 ${month + 1}月`;
+
+                    // ▼ 曜日ヘッダー
+                    const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
+                    dayNames.forEach(d => {
+                        const div = document.createElement("div");
+                        div.className = "cell day-name";
+                        div.textContent = d;
+                        grid.appendChild(div);
+                    });
+
+                    const first = new Date(year, month, 1);
+                    const last = new Date(year, month + 1, 0).getDate();
+                    const start = first.getDay();
+
+                    const events = loadEvents();
+                    const today = new Date();
+
+                    // 空白セル
+                    for (let i = 0; i < start; i++) {
+                        const empty = document.createElement("div");
+                        empty.className = "cell";
+                        grid.appendChild(empty);
+                    }
+
+                    // 日付セル
+                    for (let d = 1; d <= last; d++) {
+                        const cell = document.createElement("div");
+                        cell.className = "cell";
+                        cell.textContent = d;
+
+                        const dateKey = `${year}-${month + 1}-${d}`;
+
+                        // 今日のハイライト
+                        if (
+                            d === today.getDate() &&
+                            month === today.getMonth() &&
+                            year === today.getFullYear()
+                        ) {
+                            cell.classList.add("today");
+                        }
+
+                        // 予定表示
+                        if (events[dateKey]) {
+                            const ev = document.createElement("div");
+                            ev.className = "event";
+                            ev.textContent = events[dateKey];
+                            cell.appendChild(ev);
+                        }
+
+                        // 予定入力・削除
+                        cell.onclick = () => {
+                            const old = events[dateKey] || "";
+                            const text = prompt(`${dateKey} の予定を入力（空欄で削除）`, old);
+
+                            if (text === null) return; // キャンセル
+
+                            if (text.trim() === "") {
+                                // 削除処理
+                                const events = loadEvents();
+                                delete events[dateKey];
+                                localStorage.setItem("events", JSON.stringify(events));
+                                render();
+                                return;
+                            }
+
+                            // 上書き保存
+                            saveEvent(dateKey, text);
+                            render();
+                        };
+
+                        grid.appendChild(cell);
+                    }
+                }
+
+                // 前月へ
+                document.getElementById("prev").onclick = () => {
+                    current.setMonth(current.getMonth() - 1);
+                    render();
+                };
+
+                // 次月へ
+                document.getElementById("next").onclick = () => {
+                    current.setMonth(current.getMonth() + 1);
+                    render();
+                };
+
+                // 今日へ戻る
+                document.getElementById("todayBtn").onclick = () => {
+                    current = new Date();
+                    render();
+                };
+
+                render();
+            </script>
+        </section>
+    </div>
+</body>
+
+</html>
